@@ -13,6 +13,8 @@ import FamilyPage from './pages/FamilyPage';
 import VehiclesPage from './pages/VehiclesPage';
 import PetsPage from './pages/PetsPage';
 import AdminPage from './pages/AdminPage';
+import BudgetLimitsPage from './pages/BudgetLimitsPage';
+import SettingsPage from './pages/SettingsPage';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 function AppContent() {
@@ -44,6 +46,8 @@ function AppContent() {
       case 'family': return <FamilyPage />;
       case 'vehicles': return <VehiclesPage />;
       case 'pets': return <PetsPage />;
+      case 'budget-limits': return <BudgetLimitsPage />;
+      case 'settings': return <SettingsPage />;
       case 'admin': return <AdminPage />;
       default: return <DashboardPage />;
     }

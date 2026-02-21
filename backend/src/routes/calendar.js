@@ -1,5 +1,5 @@
 const express = require('express');
-const { findByUserId } = require('../models/db');
+const { findByUserId, insert, update, remove } = require('../models/db');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -59,6 +59,44 @@ router.get('/', (req, res) => {
   });
 
   res.json([...events, ...filteredStored]);
+});
+
+// POST /api/calendar
+router.post('/', (req, res) => {
+  const { title, date, type, description, isAlert } = req.body;
+
+  if (!title || !date) {
+    return res.status(400).json({ message: 'Vyplňte název a datum' });
+  }
+
+  const event = insert('calendarEvents', {
+    userId: req.user.id,
+    title,
+    date,
+    type: type || 'reminder',
+    description: description || '',
+    isAlert: isAlert || false,
+  });
+
+  res.status(201).json(event);
+});
+
+// PUT /api/calendar/:id
+router.put('/:id', (req, res) => {
+  const event = update('calendarEvents', req.params.id, req.body);
+  if (!event) {
+    return res.status(404).json({ message: 'Událost nenalezena' });
+  }
+  res.json(event);
+});
+
+// DELETE /api/calendar/:id
+router.delete('/:id', (req, res) => {
+  const success = remove('calendarEvents', req.params.id);
+  if (!success) {
+    return res.status(404).json({ message: 'Událost nenalezena' });
+  }
+  res.json({ message: 'Událost smazána' });
 });
 
 module.exports = router;

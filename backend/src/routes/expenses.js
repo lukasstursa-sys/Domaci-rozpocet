@@ -1,6 +1,7 @@
 const express = require('express');
 const { findByUserId, insert, update, remove } = require('../models/db');
 const { authMiddleware } = require('../middleware/auth');
+const { validateExpense } = require('../middleware/validate');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -20,7 +21,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /api/expenses
-router.post('/', (req, res) => {
+router.post('/', validateExpense, (req, res) => {
   const {
     categoryId, subcategoryId, title, amountTotal,
     amountFamily, amountWellmall, wellmallPercentage,

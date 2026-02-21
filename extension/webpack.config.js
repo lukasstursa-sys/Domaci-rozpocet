@@ -54,6 +54,7 @@ module.exports = {
       filename: '[name].css',
     }),
   ],
+  devtool: process.env.NODE_ENV === 'production' ? false : 'cheap-module-source-map',
   optimization: {
     splitChunks: false,
   },

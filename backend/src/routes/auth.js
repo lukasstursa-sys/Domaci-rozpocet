@@ -2,11 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { getDb, insert, generateId } = require('../models/db');
 const { generateToken } = require('../middleware/auth');
+const { validateAuth } = require('../middleware/validate');
 
 const router = express.Router();
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', validateAuth, async (req, res) => {
   try {
     const { email, password, familyName } = req.body;
 
@@ -46,7 +47,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', validateAuth, async (req, res) => {
   try {
     const { email, password } = req.body;
 

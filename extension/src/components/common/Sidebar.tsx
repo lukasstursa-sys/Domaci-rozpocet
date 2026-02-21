@@ -11,11 +11,13 @@ const menuItems = [
   { id: 'dashboard', label: 'Přehled', icon: '📊' },
   { id: 'expenses', label: 'Výdaje', icon: '💰' },
   { id: 'incomes', label: 'Příjmy', icon: '📈' },
+  { id: 'budget-limits', label: 'Rozpočtové limity', icon: '🎯' },
   { id: 'calendar', label: 'Kalendář', icon: '📅' },
   { id: 'ai-chat', label: 'AI Poradce', icon: '🤖' },
   { id: 'family', label: 'Rodina', icon: '👨‍👩‍👧‍👦' },
   { id: 'vehicles', label: 'Vozidla', icon: '🚗' },
   { id: 'pets', label: 'Zvířata', icon: '🐾' },
+  { id: 'settings', label: 'Nastavení', icon: '⚙️' },
 ];
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {

@@ -236,6 +236,86 @@ class ApiService {
     return response.json() as Promise<{ url: string }>;
   }
 
+  // Budget Limits
+  async getBudgetLimits(month: number, year: number) {
+    return this.request<any[]>(`/budgets?month=${month}&year=${year}`);
+  }
+
+  async createBudgetLimit(data: { categoryId: string; amount: number; month: number; year: number }) {
+    return this.request<any>('/budgets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteBudgetLimit(id: string) {
+    return this.request<void>(`/budgets/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Export & Backup
+  async exportCSV(type: 'expenses' | 'incomes', month: number, year: number): Promise<Blob> {
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(
+      `${API_BASE}/export/csv?type=${type}&month=${month}&year=${year}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      throw new Error('Export selhal');
+    }
+
+    return response.blob();
+  }
+
+  async exportBackup(): Promise<Blob> {
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/export/backup`, { headers });
+
+    if (!response.ok) {
+      throw new Error('Záloha selhala');
+    }
+
+    return response.blob();
+  }
+
+  async restoreBackup(data: any) {
+    return this.request<{ message: string; count: number }>('/export/restore', {
+      method: 'POST',
+      body: JSON.stringify({ data }),
+    });
+  }
+
+  // Calendar Events (CRUD)
+  async createCalendarEvent(event: any) {
+    return this.request<any>('/calendar', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    });
+  }
+
+  async updateCalendarEvent(id: string, event: any) {
+    return this.request<any>(`/calendar/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(event),
+    });
+  }
+
+  async deleteCalendarEvent(id: string) {
+    return this.request<void>(`/calendar/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // WellMall Report
   async generateWellmallReport(month: number, year: number) {
     const headers: Record<string, string> = {};
