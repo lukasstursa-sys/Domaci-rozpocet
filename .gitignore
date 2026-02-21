@@ -6,4 +6,5 @@ uploads/*
 !uploads/.gitkeep
 data/*
 !data/.gitkeep
+**/data/db.json
 .DS_Store
