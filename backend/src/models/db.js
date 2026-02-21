@@ -24,6 +24,11 @@ const db = {
   notifications: [],
   globalCategories: [],
   budgetLimits: [],
+  recurringTransactions: [],
+  templates: [],
+  debts: [],
+  accounts: [],
+  transfers: [],
   aiPrompt: {
     prompt: `Jsi finanční poradce pro české rodiny. Tvým cílem je pomoci rodině uniknout z "krysího závodu"
     budováním pasivních příjmů a snižováním zbytečných výdajů. Komunikuješ česky, jsi motivující ale realistický.

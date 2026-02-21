@@ -15,6 +15,10 @@ import PetsPage from './pages/PetsPage';
 import AdminPage from './pages/AdminPage';
 import BudgetLimitsPage from './pages/BudgetLimitsPage';
 import SettingsPage from './pages/SettingsPage';
+import RecurringPage from './pages/RecurringPage';
+import TemplatesPage from './pages/TemplatesPage';
+import DebtsPage from './pages/DebtsPage';
+import AccountsPage from './pages/AccountsPage';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 function AppContent() {
@@ -46,7 +50,11 @@ function AppContent() {
       case 'family': return <FamilyPage />;
       case 'vehicles': return <VehiclesPage />;
       case 'pets': return <PetsPage />;
+      case 'recurring': return <RecurringPage />;
+      case 'templates': return <TemplatesPage />;
       case 'budget-limits': return <BudgetLimitsPage />;
+      case 'accounts': return <AccountsPage />;
+      case 'debts': return <DebtsPage />;
       case 'settings': return <SettingsPage />;
       case 'admin': return <AdminPage />;
       default: return <DashboardPage />;

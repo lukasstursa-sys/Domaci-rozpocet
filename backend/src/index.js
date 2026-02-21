@@ -25,6 +25,10 @@ const uploadRoutes = require('./routes/upload');
 const reportRoutes = require('./routes/reports');
 const budgetRoutes = require('./routes/budgets');
 const exportRoutes = require('./routes/export');
+const templateRoutes = require('./routes/templates');
+const recurringRoutes = require('./routes/recurring');
+const debtRoutes = require('./routes/debts');
+const accountRoutes = require('./routes/accounts');
 
 const { checkExpirations } = require('./services/automation');
 const { generateMonthlyWellmallReports } = require('./services/reports');
@@ -80,6 +84,10 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/recurring', recurringRoutes);
+app.use('/api/debts', debtRoutes);
+app.use('/api/accounts', accountRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -87,6 +95,61 @@ app.get('/api/health', (req, res) => {
 });
 
 // Cron Jobs
+// Process recurring transactions daily at 6:30 AM
+cron.schedule('30 6 * * *', async () => {
+  console.log('[CRON] Zpracování opakujících se transakcí...');
+  try {
+    const { getDb, findByUserId, insert, update } = require('./models/db');
+    const db = getDb();
+    const now = new Date();
+    let processed = 0;
+
+    const dueItems = db.recurringTransactions.filter(
+      rt => rt.isActive && new Date(rt.nextDueDate) <= now && (!rt.endDate || new Date(rt.endDate) >= now)
+    );
+
+    for (const rt of dueItems) {
+      const dueDate = new Date(rt.nextDueDate);
+      const month = dueDate.getMonth() + 1;
+      const year = dueDate.getFullYear();
+
+      if (rt.type === 'expense') {
+        const wellmallAmt = rt.amount * ((rt.wellmallPercentage || 0) / 100);
+        insert('expenses', {
+          userId: rt.userId, categoryId: rt.categoryId || 'extraordinary',
+          subcategoryId: rt.subcategoryId, title: rt.title,
+          amountTotal: rt.amount, amountFamily: rt.amount - wellmallAmt,
+          amountWellmall: wellmallAmt, wellmallPercentage: rt.wellmallPercentage || 0,
+          isRecurring: true, frequency: rt.frequency, month, year,
+          recurringTransactionId: rt.id,
+        });
+      } else {
+        insert('incomes', {
+          userId: rt.userId, title: rt.title, amount: rt.amount,
+          type: 'active_salary', isRecurring: true, frequency: rt.frequency,
+          month, year, recurringTransactionId: rt.id,
+        });
+      }
+
+      // Advance nextDueDate
+      const next = new Date(dueDate);
+      const interval = rt.interval || 1;
+      if (rt.frequency === 'daily') next.setDate(next.getDate() + interval);
+      else if (rt.frequency === 'weekly') next.setDate(next.getDate() + interval * 7);
+      else if (rt.frequency === 'monthly') next.setMonth(next.getMonth() + interval);
+      else if (rt.frequency === 'yearly') next.setFullYear(next.getFullYear() + interval);
+
+      const updates = { nextDueDate: next.toISOString(), lastProcessedDate: now.toISOString() };
+      if (rt.endDate && next > new Date(rt.endDate)) updates.isActive = false;
+      update('recurringTransactions', rt.id, updates);
+      processed++;
+    }
+    console.log(`[CRON] Zpracováno ${processed} opakujících se transakcí`);
+  } catch (err) {
+    console.error('[CRON] Chyba při zpracování opakujících se transakcí:', err);
+  }
+});
+
 // Check contract expirations daily at 8 AM
 cron.schedule('0 8 * * *', async () => {
   console.log('[CRON] Kontrola expirací smluv...');

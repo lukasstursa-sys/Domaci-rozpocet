@@ -316,6 +316,143 @@ class ApiService {
     });
   }
 
+  // Recurring Transactions
+  async getRecurring(activeOnly?: boolean) {
+    const query = activeOnly ? '?active=true' : '';
+    return this.request<any[]>(`/recurring${query}`);
+  }
+
+  async createRecurring(data: any) {
+    return this.request<any>('/recurring', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateRecurring(id: string, data: any) {
+    return this.request<any>(`/recurring/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteRecurring(id: string) {
+    return this.request<void>(`/recurring/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async processRecurring() {
+    return this.request<{ processed: number; created: any[] }>('/recurring/process', {
+      method: 'POST',
+    });
+  }
+
+  // Transaction Templates
+  async getTemplates() {
+    return this.request<any[]>('/templates');
+  }
+
+  async createTemplate(data: any) {
+    return this.request<any>('/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTemplate(id: string, data: any) {
+    return this.request<any>(`/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTemplate(id: string) {
+    return this.request<void>(`/templates/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async useTemplate(id: string, overrides?: any) {
+    return this.request<any>(`/templates/${id}/use`, {
+      method: 'POST',
+      body: JSON.stringify(overrides || {}),
+    });
+  }
+
+  // Debts
+  async getDebts(type?: string, status?: string) {
+    const params = new URLSearchParams();
+    if (type) params.set('type', type);
+    if (status) params.set('status', status);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any[]>(`/debts${query}`);
+  }
+
+  async getDebtSummary() {
+    return this.request<{ totalDebt: number; totalCredit: number; netPosition: number; overdueCount: number }>('/debts/summary');
+  }
+
+  async createDebt(data: any) {
+    return this.request<any>('/debts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateDebt(id: string, data: any) {
+    return this.request<any>(`/debts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteDebt(id: string) {
+    return this.request<void>(`/debts/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async recordDebtPayment(id: string, payment: { amount: number; note?: string; date?: string }) {
+    return this.request<any>(`/debts/${id}/payment`, {
+      method: 'POST',
+      body: JSON.stringify(payment),
+    });
+  }
+
+  // Accounts
+  async getAccounts(includeHidden?: boolean) {
+    const query = includeHidden ? '?includeHidden=true' : '';
+    return this.request<any[]>(`/accounts${query}`);
+  }
+
+  async createAccount(data: any) {
+    return this.request<any>('/accounts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAccount(id: string, data: any) {
+    return this.request<any>(`/accounts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAccount(id: string) {
+    return this.request<void>(`/accounts/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async transferBetweenAccounts(fromAccountId: string, toAccountId: string, amount: number, note?: string) {
+    return this.request<any>('/accounts/transfer', {
+      method: 'POST',
+      body: JSON.stringify({ fromAccountId, toAccountId, amount, note }),
+    });
+  }
+
   // WellMall Report
   async generateWellmallReport(month: number, year: number) {
     const headers: Record<string, string> = {};

@@ -15,12 +15,30 @@ chrome.alarms?.create('monthlyReport', {
   periodInMinutes: 30 * 24 * 60, // Every ~30 days
 });
 
+// Daily reminder to enter transactions (evening, every 12 hours)
+chrome.alarms?.create('dailyReminder', {
+  delayInMinutes: 60,
+  periodInMinutes: 12 * 60, // Every 12 hours
+});
+
+// Process recurring transactions once daily
+chrome.alarms?.create('processRecurring', {
+  delayInMinutes: 2,
+  periodInMinutes: 24 * 60,
+});
+
 chrome.alarms?.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'dailyCheck') {
     await checkExpirations();
   }
   if (alarm.name === 'monthlyReport') {
     await sendMonthlyReminder();
+  }
+  if (alarm.name === 'dailyReminder') {
+    await sendDailyReminder();
+  }
+  if (alarm.name === 'processRecurring') {
+    await processRecurringTransactions();
   }
 });
 
@@ -75,6 +93,59 @@ async function getStoredToken(): Promise<string | null> {
       resolve(null);
     }
   });
+}
+
+async function sendDailyReminder() {
+  const token = await getStoredToken();
+  if (!token) return;
+
+  // Check if user has the reminder enabled (stored in chrome.storage)
+  const settings = await new Promise<any>((resolve) => {
+    chrome.storage?.local?.get(['dr_daily_reminder'], (result) => {
+      resolve(result);
+    });
+  });
+
+  // Default to enabled, user can disable in settings
+  if (settings?.dr_daily_reminder === false) return;
+
+  chrome.notifications?.create('daily-reminder', {
+    type: 'basic',
+    iconUrl: 'icons/icon128.png',
+    title: 'Domácí Rozpočet - Připomínka',
+    message: 'Nezapomeňte zapsat dnešní výdaje a příjmy! Pravidelné sledování je klíč k finanční svobodě.',
+    priority: 1,
+  });
+}
+
+async function processRecurringTransactions() {
+  const token = await getStoredToken();
+  if (!token) return;
+
+  try {
+    const response = await fetch('http://localhost:3001/api/recurring/process', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) return;
+
+    const result = await response.json();
+    if (result.processed > 0) {
+      chrome.notifications?.create('recurring-processed', {
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: 'Domácí Rozpočet - Opakující se platby',
+        message: `Automaticky zpracováno ${result.processed} opakujících se transakcí.`,
+        priority: 1,
+      });
+    }
+  } catch (err) {
+    console.error('Recurring processing failed:', err);
+  }
 }
 
 // Handle notification clicks

@@ -3,6 +3,7 @@ import MonthSelector from '../components/common/MonthSelector';
 import RatRaceMeter from '../components/dashboard/RatRaceMeter';
 import OverviewCards from '../components/dashboard/OverviewCards';
 import CategoryChart from '../components/dashboard/CategoryChart';
+import CashFlowSummary from '../components/dashboard/CashFlowSummary';
 import AIWidget from '../components/dashboard/AIWidget';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency, formatDate } from '../utils/format';
@@ -70,10 +71,14 @@ export default function DashboardPage() {
       {/* Overview Cards */}
       <OverviewCards />
 
-      {/* Charts + Recent */}
+      {/* Cash Flow Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CashFlowSummary />
         <CategoryChart />
+      </div>
 
+      {/* Recent Expenses */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Recent Expenses */}
         <div className="card">
           <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
