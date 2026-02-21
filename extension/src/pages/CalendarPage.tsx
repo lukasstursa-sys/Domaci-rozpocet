@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import MonthSelector from '../components/common/MonthSelector';
+import Modal from '../components/common/Modal';
 import { formatCurrency, getMonthName } from '../utils/format';
+import type { CalendarEvent } from '../types';
+import api from '../services/api';
 
 export default function CalendarPage() {
-  const { calendarEvents, expenses, currentMonth, currentYear } = useData();
+  const { calendarEvents, expenses, currentMonth, currentYear, refreshData } = useData();
   const [view, setView] = useState<'month' | 'list'>('month');
+  const [showForm, setShowForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [formTitle, setFormTitle] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formDate, setFormDate] = useState('');
+  const [formType, setFormType] = useState<string>('custom');
+  const [formIsAlert, setFormIsAlert] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Build calendar grid
   const firstDay = new Date(currentYear, currentMonth - 1, 1);
@@ -35,6 +46,70 @@ export default function CalendarPage() {
     currentMonth === today.getMonth() + 1 &&
     currentYear === today.getFullYear();
 
+  const openCreateForm = (day?: number) => {
+    setEditingEvent(null);
+    setFormTitle('');
+    setFormDescription('');
+    setFormDate(day
+      ? `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      : `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
+    );
+    setFormType('custom');
+    setFormIsAlert(false);
+    setShowForm(true);
+  };
+
+  const openEditForm = (event: CalendarEvent) => {
+    setEditingEvent(event);
+    setFormTitle(event.title);
+    setFormDescription(event.description || '');
+    setFormDate(event.date);
+    setFormType(event.type || 'custom');
+    setFormIsAlert(event.isAlert || false);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingEvent(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle || !formDate) return;
+    setIsSubmitting(true);
+    try {
+      const data = {
+        title: formTitle,
+        description: formDescription || undefined,
+        date: formDate,
+        type: formType,
+        isAlert: formIsAlert,
+      };
+      if (editingEvent) {
+        await api.updateCalendarEvent(editingEvent.id, data);
+      } else {
+        await api.createCalendarEvent(data);
+      }
+      closeForm();
+      await refreshData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (event: CalendarEvent) => {
+    if (!confirm(`Opravdu chcete smazat událost "${event.title}"?`)) return;
+    try {
+      await api.deleteCalendarEvent(event.id);
+      await refreshData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -60,6 +135,9 @@ export default function CalendarPage() {
             </button>
           </div>
           <MonthSelector />
+          <button onClick={() => openCreateForm()} className="btn-primary">
+            + Událost
+          </button>
         </div>
       </div>
 
@@ -91,11 +169,13 @@ export default function CalendarPage() {
                   const dayEvents = getEventsForDay(day);
                   const hasDue = dayEvents.some((e) => e.type === 'due_date');
                   const hasExpiration = dayEvents.some((e) => e.type === 'expiration');
+                  const hasCustom = dayEvents.some((e) => e.type === 'custom');
 
                   return (
                     <div
                       key={day}
-                      className={`h-20 rounded-lg p-1.5 border transition-colors ${
+                      onClick={() => openCreateForm(day)}
+                      className={`h-20 rounded-lg p-1.5 border transition-colors cursor-pointer ${
                         isToday(day)
                           ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                           : 'border-gray-100 dark:border-dark-border hover:border-gray-300 dark:hover:border-gray-600'
@@ -117,6 +197,11 @@ export default function CalendarPage() {
                             Expirace
                           </div>
                         )}
+                        {hasCustom && (
+                          <div className="text-[9px] bg-secondary-100 dark:bg-secondary-900/40 text-secondary-700 dark:text-secondary-300 rounded px-1 truncate">
+                            Událost
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -132,7 +217,7 @@ export default function CalendarPage() {
                 calendarEvents
                   .sort((a, b) => a.date.localeCompare(b.date))
                   .map((event) => (
-                    <div key={event.id} className={`flex items-center gap-3 p-3 rounded-xl ${
+                    <div key={event.id} className={`flex items-center gap-3 p-3 rounded-xl group ${
                       event.isAlert
                         ? 'bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800'
                         : 'bg-gray-50 dark:bg-gray-800/50'
@@ -149,6 +234,24 @@ export default function CalendarPage() {
                       <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         {new Date(event.date).toLocaleDateString('cs-CZ')}
                       </span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => openEditForm(event)}
+                          className="text-gray-400 hover:text-primary-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-primary-50 dark:hover:bg-primary-900/30"
+                          title="Upravit"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(event)}
+                          className="text-gray-400 hover:text-warning-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-warning-50 dark:hover:bg-warning-900/30"
+                          title="Smazat"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   ))
               )}
@@ -201,6 +304,44 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+
+      {/* Create/Edit Event Modal */}
+      <Modal isOpen={showForm} onClose={closeForm} title={editingEvent ? 'Upravit událost' : 'Nová událost'}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="label">Název *</label>
+            <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="input-field" placeholder="Název události" required />
+          </div>
+          <div>
+            <label className="label">Popis</label>
+            <textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className="input-field" rows={2} placeholder="Volitelný popis..." />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Datum *</label>
+              <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="input-field" required />
+            </div>
+            <div>
+              <label className="label">Typ</label>
+              <select value={formType} onChange={(e) => setFormType(e.target.value)} className="input-field">
+                <option value="custom">Vlastní</option>
+                <option value="due_date">Splatnost</option>
+                <option value="expiration">Expirace</option>
+              </select>
+            </div>
+          </div>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={formIsAlert} onChange={(e) => setFormIsAlert(e.target.checked)} className="w-4 h-4 accent-primary-500" />
+            <span className="text-sm text-gray-600 dark:text-gray-300">Upozornění</span>
+          </label>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={closeForm} className="btn-outline">Zrušit</button>
+            <button type="submit" disabled={isSubmitting} className="btn-primary">
+              {isSubmitting ? 'Ukládání...' : editingEvent ? 'Uložit změny' : 'Vytvořit'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

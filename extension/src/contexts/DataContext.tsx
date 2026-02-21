@@ -25,7 +25,9 @@ interface DataContextType {
   refreshData: () => Promise<void>;
   isLoading: boolean;
   addExpense: (expense: Omit<Expense, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
   addIncome: (income: Omit<Income, 'id' | 'userId' | 'createdAt'>) => Promise<void>;
+  updateIncome: (id: string, income: Partial<Income>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
   deleteIncome: (id: string) => Promise<void>;
 }
@@ -115,6 +117,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const updateExpense = useCallback(
+    async (id: string, expense: Partial<Expense>) => {
+      const updated = await api.updateExpense(id, expense);
+      setExpenses((prev) => prev.map((e) => (e.id === id ? { ...e, ...updated } : e)));
+    },
+    []
+  );
+
+  const updateIncome = useCallback(
+    async (id: string, income: Partial<Income>) => {
+      const updated = await api.updateIncome(id, income);
+      setIncomes((prev) => prev.map((i) => (i.id === id ? { ...i, ...updated } : i)));
+    },
+    []
+  );
+
   const deleteExpense = useCallback(async (id: string) => {
     await api.deleteExpense(id);
     setExpenses((prev) => prev.filter((e) => e.id !== id));
@@ -194,7 +212,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         refreshData,
         isLoading,
         addExpense,
+        updateExpense,
         addIncome,
+        updateIncome,
         deleteExpense,
         deleteIncome,
       }}

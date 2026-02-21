@@ -63,6 +63,8 @@ module.exports = {
         'soft-lg': '0 10px 40px -15px rgba(0, 0, 0, 0.1)',
         neumorphic: '8px 8px 16px #d1d5db, -8px -8px 16px #ffffff',
         'neumorphic-dark': '8px 8px 16px #0c1222, -8px -8px 16px #121e38',
+        'neu-light': '6px 6px 12px #d1d5db, -6px -6px 12px #ffffff',
+        'neu-dark': '6px 6px 12px #0c1222, -6px -6px 12px #1a2744',
       },
     },
   },

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import Modal from '../components/common/Modal';
 import api from '../services/api';
+import type { Pet } from '../types';
 
 const PET_TYPE_LABELS = { dog: 'Pes', cat: 'Kočka', guinea_pig: 'Morče', hen: 'Slepice', other: 'Ostatní' };
 const PET_TYPE_ICONS = { dog: '🐕', cat: '🐱', guinea_pig: '🐹', hen: '🐔', other: '🐾' };
@@ -9,21 +10,59 @@ const PET_TYPE_ICONS = { dog: '🐕', cat: '🐱', guinea_pig: '🐹', hen: '�
 export default function PetsPage() {
   const { pets, expenses, refreshData } = useData();
   const [showForm, setShowForm] = useState(false);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [type, setType] = useState<string>('dog');
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const openCreateForm = () => {
+    setEditingPet(null);
+    setType('dog');
+    setName('');
+    setShowForm(true);
+  };
+
+  const openEditForm = (pet: Pet) => {
+    setEditingPet(pet);
+    setType(pet.type);
+    setName(pet.name);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingPet(null);
+    setName('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
     setIsSubmitting(true);
     try {
-      await api.createPet({ type, name });
+      const data = { type, name };
+      if (editingPet) {
+        await api.updatePet(editingPet.id, data);
+      } else {
+        await api.createPet(data);
+      }
       await refreshData();
-      setShowForm(false);
-      setName('');
-    } catch (err) { console.error(err); }
-    finally { setIsSubmitting(false); }
+      closeForm();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (pet: Pet) => {
+    if (!confirm(`Opravdu chcete smazat mazlíčka "${pet.name}"?`)) return;
+    try {
+      await api.deletePet(pet.id);
+      await refreshData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -33,7 +72,7 @@ export default function PetsPage() {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Zvířata</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Správa mazlíčků a jejich nákladů</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn-primary">+ Přidat mazlíčka</button>
+        <button onClick={openCreateForm} className="btn-primary">+ Přidat mazlíčka</button>
       </div>
 
       {pets.length === 0 ? (
@@ -47,16 +86,38 @@ export default function PetsPage() {
             const totalCost = petExpenses.reduce((sum, e) => sum + e.amountTotal, 0);
 
             return (
-              <div key={p.id} className="card">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-3xl">
-                    {PET_TYPE_ICONS[p.type as keyof typeof PET_TYPE_ICONS] || '🐾'}
-                  </span>
-                  <div>
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">{p.name}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {PET_TYPE_LABELS[p.type as keyof typeof PET_TYPE_LABELS] || p.type}
-                    </p>
+              <div key={p.id} className="card group">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">
+                      {PET_TYPE_ICONS[p.type as keyof typeof PET_TYPE_ICONS] || '🐾'}
+                    </span>
+                    <div>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-100">{p.name}</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {PET_TYPE_LABELS[p.type as keyof typeof PET_TYPE_LABELS] || p.type}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => openEditForm(p)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      title="Upravit"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p)}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      title="Smazat"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
 
@@ -80,7 +141,7 @@ export default function PetsPage() {
         </div>
       )}
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Nový mazlíček">
+      <Modal isOpen={showForm} onClose={closeForm} title={editingPet ? 'Upravit mazlíčka' : 'Nový mazlíček'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="label">Typ</label>
@@ -95,9 +156,9 @@ export default function PetsPage() {
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input-field" required />
           </div>
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-outline">Zrušit</button>
+            <button type="button" onClick={closeForm} className="btn-outline">Zrušit</button>
             <button type="submit" disabled={isSubmitting} className="btn-primary">
-              {isSubmitting ? 'Ukládání...' : 'Přidat'}
+              {isSubmitting ? 'Ukládání...' : editingPet ? 'Uložit změny' : 'Přidat'}
             </button>
           </div>
         </form>

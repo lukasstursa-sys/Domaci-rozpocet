@@ -3,7 +3,7 @@ import { useData } from '../contexts/DataContext';
 import MonthSelector from '../components/common/MonthSelector';
 import Modal from '../components/common/Modal';
 import { formatCurrency } from '../utils/format';
-import type { IncomeType } from '../types';
+import type { Income, IncomeType } from '../types';
 
 const INCOME_TYPE_LABELS: Record<IncomeType, string> = {
   active_salary: 'Aktivní příjem (plat)',
@@ -20,8 +20,9 @@ const INCOME_TYPE_ICONS: Record<IncomeType, string> = {
 };
 
 export default function IncomesPage() {
-  const { incomes, overview, addIncome, deleteIncome, familyMembers, currentMonth, currentYear } = useData();
+  const { incomes, overview, addIncome, updateIncome, deleteIncome, familyMembers, currentMonth, currentYear } = useData();
   const [showForm, setShowForm] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<IncomeType>('active_salary');
@@ -32,24 +33,54 @@ export default function IncomesPage() {
   const activeIncomes = incomes.filter((i) => i.type === 'active_salary');
   const passiveIncomes = incomes.filter((i) => i.type !== 'active_salary');
 
+  const openCreateForm = () => {
+    setEditingIncome(null);
+    setTitle('');
+    setAmount('');
+    setType('active_salary');
+    setLinkedMemberId('');
+    setIsRecurring(true);
+    setShowForm(true);
+  };
+
+  const openEditForm = (income: Income) => {
+    setEditingIncome(income);
+    setTitle(income.title);
+    setAmount(String(income.amount));
+    setType(income.type);
+    setLinkedMemberId(income.linkedMemberId || '');
+    setIsRecurring(income.isRecurring ?? true);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingIncome(null);
+    setTitle('');
+    setAmount('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !amount) return;
     setIsSubmitting(true);
     try {
-      await addIncome({
+      const data = {
         title,
         amount: parseFloat(amount),
         type,
         linkedMemberId: linkedMemberId || undefined,
         isRecurring,
-        frequency: 'monthly',
+        frequency: 'monthly' as const,
         month: currentMonth,
         year: currentYear,
-      });
-      setShowForm(false);
-      setTitle('');
-      setAmount('');
+      };
+      if (editingIncome) {
+        await updateIncome(editingIncome.id, data);
+      } else {
+        await addIncome(data);
+      }
+      closeForm();
     } catch (err) {
       console.error(err);
     } finally {
@@ -63,6 +94,38 @@ export default function IncomesPage() {
     }
   };
 
+  const renderIncomeRow = (inc: Income) => (
+    <div key={inc.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
+      <div className="flex items-center gap-3">
+        <span>{INCOME_TYPE_ICONS[inc.type]}</span>
+        <div>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{inc.title}</p>
+          <span className="text-xs text-gray-400">{INCOME_TYPE_LABELS[inc.type]}</span>
+          {inc.isRecurring && <span className="badge-info text-[10px] ml-2">měsíčně</span>}
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className={`text-sm font-bold ${inc.type === 'active_salary' ? 'text-gray-700 dark:text-gray-200' : 'text-secondary-600 dark:text-secondary-400'}`}>
+          {formatCurrency(inc.amount)}
+        </span>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+          <button
+            onClick={() => openEditForm(inc)}
+            className="text-gray-400 hover:text-primary-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-primary-50 dark:hover:bg-primary-900/30"
+            title="Upravit"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <button onClick={() => handleDelete(inc.id)} className="text-gray-400 hover:text-warning-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-warning-50 dark:hover:bg-warning-900/30">
+            ✕
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -74,7 +137,7 @@ export default function IncomesPage() {
         </div>
         <div className="flex items-center gap-3">
           <MonthSelector />
-          <button onClick={() => setShowForm(true)} className="btn-secondary">
+          <button onClick={openCreateForm} className="btn-secondary">
             + Nový příjem
           </button>
         </div>
@@ -124,22 +187,7 @@ export default function IncomesPage() {
           <p className="text-gray-400 text-center py-4">Žádné aktivní příjmy</p>
         ) : (
           <div className="space-y-2">
-            {activeIncomes.map((inc) => (
-              <div key={inc.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{inc.title}</p>
-                  {inc.isRecurring && <span className="badge-info text-[10px]">měsíčně</span>}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
-                    {formatCurrency(inc.amount)}
-                  </span>
-                  <button onClick={() => handleDelete(inc.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-warning-500 transition-all">
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ))}
+            {activeIncomes.map(renderIncomeRow)}
           </div>
         )}
       </div>
@@ -155,31 +203,13 @@ export default function IncomesPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            {passiveIncomes.map((inc) => (
-              <div key={inc.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
-                <div className="flex items-center gap-3">
-                  <span>{INCOME_TYPE_ICONS[inc.type]}</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{inc.title}</p>
-                    <span className="text-xs text-gray-400">{INCOME_TYPE_LABELS[inc.type]}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-secondary-600 dark:text-secondary-400">
-                    {formatCurrency(inc.amount)}
-                  </span>
-                  <button onClick={() => handleDelete(inc.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-warning-500 transition-all">
-                    ✕
-                  </button>
-                </div>
-              </div>
-            ))}
+            {passiveIncomes.map(renderIncomeRow)}
           </div>
         )}
       </div>
 
-      {/* Add Income Modal */}
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Nový příjem">
+      {/* Add/Edit Income Modal */}
+      <Modal isOpen={showForm} onClose={closeForm} title={editingIncome ? 'Upravit příjem' : 'Nový příjem'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="label">Název příjmu *</label>
@@ -211,9 +241,9 @@ export default function IncomesPage() {
             <span className="text-sm text-gray-600 dark:text-gray-300">Opakující se měsíčně</span>
           </label>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-outline">Zrušit</button>
+            <button type="button" onClick={closeForm} className="btn-outline">Zrušit</button>
             <button type="submit" disabled={isSubmitting} className="btn-secondary">
-              {isSubmitting ? 'Ukládání...' : 'Uložit příjem'}
+              {isSubmitting ? 'Ukládání...' : editingIncome ? 'Uložit změny' : 'Uložit příjem'}
             </button>
           </div>
         </form>

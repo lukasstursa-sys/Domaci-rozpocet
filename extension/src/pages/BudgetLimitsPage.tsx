@@ -20,6 +20,7 @@ export default function BudgetLimitsPage() {
   const { currentMonth, currentYear } = useData();
   const [limits, setLimits] = useState<BudgetLimit[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingLimit, setEditingLimit] = useState<BudgetLimit | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory>('family_life');
   const [amount, setAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,19 +38,44 @@ export default function BudgetLimitsPage() {
     loadLimits();
   }, [currentMonth, currentYear]);
 
+  const openCreateForm = () => {
+    setEditingLimit(null);
+    setSelectedCategory(availableCategories[0] || 'family_life');
+    setAmount('');
+    setShowForm(true);
+  };
+
+  const openEditForm = (limit: BudgetLimit) => {
+    setEditingLimit(limit);
+    setSelectedCategory(limit.categoryId);
+    setAmount(String(limit.amount));
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingLimit(null);
+    setAmount('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount) return;
     setIsSubmitting(true);
     try {
-      await api.createBudgetLimit({
-        categoryId: selectedCategory,
-        amount: parseFloat(amount),
-        month: currentMonth,
-        year: currentYear,
-      });
-      setShowForm(false);
-      setAmount('');
+      if (editingLimit) {
+        await api.updateBudgetLimit(editingLimit.id, {
+          amount: parseFloat(amount),
+        });
+      } else {
+        await api.createBudgetLimit({
+          categoryId: selectedCategory,
+          amount: parseFloat(amount),
+          month: currentMonth,
+          year: currentYear,
+        });
+      }
+      closeForm();
       loadLimits();
     } catch (err) {
       console.error(err);
@@ -95,7 +121,7 @@ export default function BudgetLimitsPage() {
         <div className="flex items-center gap-3">
           <MonthSelector />
           {availableCategories.length > 0 && (
-            <button onClick={() => setShowForm(true)} className="btn-primary">
+            <button onClick={openCreateForm} className="btn-primary">
               + Nový limit
             </button>
           )}
@@ -128,12 +154,24 @@ export default function BudgetLimitsPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDelete(limit.id)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-warning-500 transition-all"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button
+                    onClick={() => openEditForm(limit)}
+                    className="text-gray-400 hover:text-primary-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-primary-50 dark:hover:bg-primary-900/30"
+                    title="Upravit"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(limit.id)}
+                    className="text-gray-400 hover:text-warning-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-warning-50 dark:hover:bg-warning-900/30"
+                    title="Smazat"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* Progress bar */}
@@ -172,19 +210,25 @@ export default function BudgetLimitsPage() {
         </div>
       )}
 
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Nový rozpočtový limit">
+      <Modal isOpen={showForm} onClose={closeForm} title={editingLimit ? 'Upravit limit' : 'Nový rozpočtový limit'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="label">Kategorie</label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value as ExpenseCategory)}
-              className="input-field"
-            >
-              {availableCategories.map((key) => (
-                <option key={key} value={key}>{CATEGORY_LABELS[key]}</option>
-              ))}
-            </select>
+            {editingLimit ? (
+              <p className="input-field bg-gray-50 dark:bg-gray-800 cursor-not-allowed">
+                {CATEGORY_LABELS[editingLimit.categoryId]}
+              </p>
+            ) : (
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value as ExpenseCategory)}
+                className="input-field"
+              >
+                {availableCategories.map((key) => (
+                  <option key={key} value={key}>{CATEGORY_LABELS[key]}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="label">Měsíční limit (Kč)</label>
@@ -199,11 +243,11 @@ export default function BudgetLimitsPage() {
             />
           </div>
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-outline">
+            <button type="button" onClick={closeForm} className="btn-outline">
               Zrušit
             </button>
             <button type="submit" disabled={isSubmitting} className="btn-primary">
-              {isSubmitting ? 'Ukládání...' : 'Nastavit limit'}
+              {isSubmitting ? 'Ukládání...' : editingLimit ? 'Uložit změny' : 'Nastavit limit'}
             </button>
           </div>
         </form>

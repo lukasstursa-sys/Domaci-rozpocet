@@ -694,7 +694,7 @@ export default function TemplatesPage() {
                   value={useYear}
                   onChange={(e) => setUseYear(parseInt(e.target.value))}
                   min={2020}
-                  max={2040}
+                  max={2099}
                   className={inputCls}
                 />
               </div>

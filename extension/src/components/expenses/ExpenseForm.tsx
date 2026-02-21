@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
-import type { ExpenseCategory, ExpenseSubcategory } from '../../types';
+import type { Expense, ExpenseCategory, ExpenseSubcategory } from '../../types';
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS } from '../../types';
 
 interface ExpenseFormProps {
   onClose: () => void;
   initialCategory?: ExpenseCategory;
+  editingExpense?: Expense | null;
 }
 
 const SUBCATEGORIES_BY_CATEGORY: Record<ExpenseCategory, ExpenseSubcategory[]> = {
@@ -21,23 +22,23 @@ const SUBCATEGORIES_BY_CATEGORY: Record<ExpenseCategory, ExpenseSubcategory[]> =
   extraordinary: ['renovation', 'misc'],
 };
 
-export default function ExpenseForm({ onClose, initialCategory }: ExpenseFormProps) {
-  const { addExpense, familyMembers, vehicles, pets, currentMonth, currentYear } = useData();
+export default function ExpenseForm({ onClose, initialCategory, editingExpense }: ExpenseFormProps) {
+  const { addExpense, updateExpense, familyMembers, vehicles, pets, currentMonth, currentYear } = useData();
 
-  const [title, setTitle] = useState('');
-  const [amountTotal, setAmountTotal] = useState('');
-  const [categoryId, setCategoryId] = useState<ExpenseCategory>(initialCategory || 'family_life');
-  const [subcategoryId, setSubcategoryId] = useState<ExpenseSubcategory | ''>('');
-  const [wellmallPercentage, setWellmallPercentage] = useState(0);
-  const [isRecurring, setIsRecurring] = useState(true);
-  const [frequency, setFrequency] = useState<'monthly' | 'yearly'>('monthly');
-  const [providerName, setProviderName] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [contractEndDate, setContractEndDate] = useState('');
-  const [linkedMemberId, setLinkedMemberId] = useState('');
-  const [linkedVehicleId, setLinkedVehicleId] = useState('');
-  const [linkedPetId, setLinkedPetId] = useState('');
-  const [notes, setNotes] = useState('');
+  const [title, setTitle] = useState(editingExpense?.title || '');
+  const [amountTotal, setAmountTotal] = useState(editingExpense ? String(editingExpense.amountTotal) : '');
+  const [categoryId, setCategoryId] = useState<ExpenseCategory>(editingExpense?.categoryId || initialCategory || 'family_life');
+  const [subcategoryId, setSubcategoryId] = useState<ExpenseSubcategory | ''>(editingExpense?.subcategoryId || '');
+  const [wellmallPercentage, setWellmallPercentage] = useState(editingExpense?.wellmallPercentage ?? 0);
+  const [isRecurring, setIsRecurring] = useState(editingExpense?.isRecurring ?? true);
+  const [frequency, setFrequency] = useState<'monthly' | 'yearly'>((editingExpense?.frequency === 'monthly' || editingExpense?.frequency === 'yearly') ? editingExpense.frequency : 'monthly');
+  const [providerName, setProviderName] = useState(editingExpense?.providerName || '');
+  const [dueDate, setDueDate] = useState(editingExpense?.dueDate ? editingExpense.dueDate.split('T')[0] : '');
+  const [contractEndDate, setContractEndDate] = useState(editingExpense?.contractEndDate ? editingExpense.contractEndDate.split('T')[0] : '');
+  const [linkedMemberId, setLinkedMemberId] = useState(editingExpense?.linkedMemberId || '');
+  const [linkedVehicleId, setLinkedVehicleId] = useState(editingExpense?.linkedVehicleId || '');
+  const [linkedPetId, setLinkedPetId] = useState(editingExpense?.linkedPetId || '');
+  const [notes, setNotes] = useState(editingExpense?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const total = parseFloat(amountTotal) || 0;
@@ -50,7 +51,7 @@ export default function ExpenseForm({ onClose, initialCategory }: ExpenseFormPro
 
     setIsSubmitting(true);
     try {
-      await addExpense({
+      const data = {
         categoryId,
         subcategoryId: subcategoryId || undefined,
         title,
@@ -69,7 +70,13 @@ export default function ExpenseForm({ onClose, initialCategory }: ExpenseFormPro
         notes: notes || undefined,
         month: currentMonth,
         year: currentYear,
-      });
+      };
+
+      if (editingExpense) {
+        await updateExpense(editingExpense.id, data);
+      } else {
+        await addExpense(data);
+      }
       onClose();
     } catch (err) {
       console.error('Chyba při ukládání:', err);
@@ -293,7 +300,7 @@ export default function ExpenseForm({ onClose, initialCategory }: ExpenseFormPro
           Zrušit
         </button>
         <button type="submit" disabled={isSubmitting} className="btn-primary">
-          {isSubmitting ? 'Ukládání...' : 'Uložit výdaj'}
+          {isSubmitting ? 'Ukládání...' : editingExpense ? 'Uložit změny' : 'Uložit výdaj'}
         </button>
       </div>
     </form>

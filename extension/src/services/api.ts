@@ -2,7 +2,7 @@
 // API Service - Communication with Backend
 // ============================================================
 
-const API_BASE = process.env.API_URL || 'http://localhost:3001/api';
+const API_BASE = 'http://localhost:3001/api';
 
 class ApiService {
   private token: string | null = null;
@@ -118,6 +118,19 @@ class ApiService {
     });
   }
 
+  async updateFamilyMember(id: string, member: any) {
+    return this.request<any>(`/family-members/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(member),
+    });
+  }
+
+  async deleteFamilyMember(id: string) {
+    return this.request<void>(`/family-members/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Vehicles
   async getVehicles() {
     return this.request<any[]>('/vehicles');
@@ -130,6 +143,19 @@ class ApiService {
     });
   }
 
+  async updateVehicle(id: string, vehicle: any) {
+    return this.request<any>(`/vehicles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(vehicle),
+    });
+  }
+
+  async deleteVehicle(id: string) {
+    return this.request<void>(`/vehicles/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Pets
   async getPets() {
     return this.request<any[]>('/pets');
@@ -139,6 +165,19 @@ class ApiService {
     return this.request<any>('/pets', {
       method: 'POST',
       body: JSON.stringify(pet),
+    });
+  }
+
+  async updatePet(id: string, pet: any) {
+    return this.request<any>(`/pets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(pet),
+    });
+  }
+
+  async deletePet(id: string) {
+    return this.request<void>(`/pets/${id}`, {
+      method: 'DELETE',
     });
   }
 
@@ -244,6 +283,13 @@ class ApiService {
   async createBudgetLimit(data: { categoryId: string; amount: number; month: number; year: number }) {
     return this.request<any>('/budgets', {
       method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateBudgetLimit(id: string, data: { amount: number }) {
+    return this.request<any>(`/budgets/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     });
   }

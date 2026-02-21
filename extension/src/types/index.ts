@@ -105,7 +105,7 @@ export interface CalendarEvent {
   userId: string;
   title: string;
   date: string;
-  type: 'due_date' | 'expiration' | 'payment' | 'reminder';
+  type: 'due_date' | 'expiration' | 'payment' | 'reminder' | 'custom';
   relatedExpenseId?: string;
   description?: string;
   isAlert: boolean;
@@ -164,6 +164,140 @@ export interface CategoryBreakdown {
   amount: number;
   percentage: number;
   color: string;
+}
+
+// ============================================================
+// Recurring Transaction Types
+// ============================================================
+
+export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type RecurringType = 'expense' | 'income';
+
+export interface RecurringTransaction {
+  id: string;
+  userId: string;
+  type: RecurringType;
+  title: string;
+  amount: number;
+  categoryId: ExpenseCategory;
+  frequency: RecurringFrequency;
+  interval: number;
+  startDate: string;
+  endDate?: string;
+  nextDueDate: string;
+  isActive: boolean;
+  autoConfirm: boolean;
+  isSubscription: boolean;
+  providerName?: string;
+  wellmallPercentage: number;
+  notes?: string;
+  createdAt: string;
+}
+
+// ============================================================
+// Template Types
+// ============================================================
+
+export interface TransactionTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  icon: string;
+  type: 'expense' | 'income';
+  title: string;
+  amount: number;
+  categoryId: ExpenseCategory;
+  subcategoryId?: ExpenseSubcategory;
+  wellmallPercentage: number;
+  providerName?: string;
+  notes?: string;
+  usageCount: number;
+  createdAt: string;
+}
+
+// ============================================================
+// Debt Types
+// ============================================================
+
+export type DebtType = 'debt' | 'credit';
+export type DebtStatus = 'active' | 'paid_off' | 'overdue';
+
+export interface DebtPayment {
+  id: string;
+  amount: number;
+  note?: string;
+  date: string;
+}
+
+export interface Debt {
+  id: string;
+  userId: string;
+  type: DebtType;
+  counterparty: string;
+  description: string;
+  originalAmount: number;
+  remainingAmount: number;
+  interestRate?: number;
+  startDate: string;
+  dueDate?: string;
+  status: DebtStatus;
+  notes?: string;
+  payments: DebtPayment[];
+  createdAt: string;
+}
+
+export interface DebtSummary {
+  totalDebt: number;
+  totalCredit: number;
+  netPosition: number;
+  overdueCount: number;
+}
+
+// ============================================================
+// Account Types
+// ============================================================
+
+export type AccountType = 'cash' | 'bank' | 'savings' | 'credit_card' | 'investment';
+
+export interface Account {
+  id: string;
+  userId: string;
+  name: string;
+  type: AccountType;
+  balance: number;
+  initialBalance: number;
+  currency: string;
+  icon: string;
+  color: string;
+  isDefault: boolean;
+  isHidden: boolean;
+  includeInTotal: boolean;
+  notes: string;
+  createdAt: string;
+}
+
+export interface AccountTransfer {
+  id: string;
+  userId: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  note?: string;
+  createdAt: string;
+}
+
+// ============================================================
+// Budget Limit Types
+// ============================================================
+
+export interface BudgetLimit {
+  id: string;
+  userId: string;
+  categoryId: string;
+  amount: number;
+  month: number;
+  year: number;
+  createdAt: string;
 }
 
 // Category labels in Czech

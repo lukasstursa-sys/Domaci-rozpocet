@@ -87,7 +87,7 @@ async function getStoredToken(): Promise<string | null> {
   return new Promise((resolve) => {
     if (chrome.storage?.local) {
       chrome.storage.local.get(['dr_token'], (result) => {
-        resolve(result.dr_token || null);
+        resolve((result as Record<string, string>).dr_token || null);
       });
     } else {
       resolve(null);

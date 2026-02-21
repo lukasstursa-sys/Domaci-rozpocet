@@ -5,11 +5,12 @@ import Modal from '../components/common/Modal';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import { formatCurrency } from '../utils/format';
 import { CATEGORY_LABELS, SUBCATEGORY_LABELS, CATEGORY_COLORS } from '../types';
-import type { ExpenseCategory } from '../types';
+import type { Expense, ExpenseCategory } from '../types';
 
 export default function ExpensesPage() {
   const { expenses, overview, deleteExpense } = useData();
   const [showForm, setShowForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [filterCategory, setFilterCategory] = useState<ExpenseCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -33,6 +34,21 @@ export default function ExpensesPage() {
     }
   };
 
+  const openCreateForm = () => {
+    setEditingExpense(null);
+    setShowForm(true);
+  };
+
+  const openEditForm = (expense: Expense) => {
+    setEditingExpense(expense);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingExpense(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -47,7 +63,7 @@ export default function ExpensesPage() {
         </div>
         <div className="flex items-center gap-3">
           <MonthSelector />
-          <button onClick={() => setShowForm(true)} className="btn-primary">
+          <button onClick={openCreateForm} className="btn-primary">
             + Nový výdaj
           </button>
         </div>
@@ -209,12 +225,24 @@ export default function ExpensesPage() {
                         )}
                       </div>
 
-                      <button
-                        onClick={() => handleDelete(exp.id)}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-warning-500 transition-all w-7 h-7 rounded-lg flex items-center justify-center hover:bg-warning-50 dark:hover:bg-warning-900/30"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => openEditForm(exp)}
+                          className="text-gray-400 hover:text-primary-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-primary-50 dark:hover:bg-primary-900/30"
+                          title="Upravit"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(exp.id)}
+                          className="text-gray-400 hover:text-warning-500 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-warning-50 dark:hover:bg-warning-900/30"
+                          title="Smazat"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -224,9 +252,9 @@ export default function ExpensesPage() {
         })
       )}
 
-      {/* Add Expense Modal */}
-      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="Nový výdaj" size="lg">
-        <ExpenseForm onClose={() => setShowForm(false)} />
+      {/* Add/Edit Expense Modal */}
+      <Modal isOpen={showForm} onClose={closeForm} title={editingExpense ? 'Upravit výdaj' : 'Nový výdaj'} size="lg">
+        <ExpenseForm onClose={closeForm} editingExpense={editingExpense} />
       </Modal>
     </div>
   );
