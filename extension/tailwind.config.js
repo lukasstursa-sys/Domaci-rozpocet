@@ -1,0 +1,70 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./src/**/*.{ts,tsx}', './public/**/*.html'],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#e8edf5',
+          100: '#c5d0e6',
+          200: '#9eb0d5',
+          300: '#7790c4',
+          400: '#5978b8',
+          500: '#1a365d',
+          600: '#162d4f',
+          700: '#112240',
+          800: '#0c1832',
+          900: '#070e24',
+        },
+        secondary: {
+          50: '#e6f7ef',
+          100: '#c0ebd7',
+          200: '#96debc',
+          300: '#6cd1a1',
+          400: '#4dc78c',
+          500: '#2d8f5e',
+          600: '#267a50',
+          700: '#1e6441',
+          800: '#174f33',
+          900: '#0f3a25',
+        },
+        warning: {
+          50: '#fef0ee',
+          100: '#fcd8d3',
+          200: '#f9beb5',
+          300: '#f6a397',
+          400: '#f48f80',
+          500: '#e85d4a',
+          600: '#c94e3d',
+          700: '#a93f31',
+          800: '#8a3126',
+          900: '#6b231b',
+        },
+        surface: {
+          light: '#f7f8fa',
+          DEFAULT: '#f0f2f5',
+          dark: '#e4e7ec',
+        },
+        'dark-bg': '#0f172a',
+        'dark-card': '#1e293b',
+        'dark-border': '#334155',
+      },
+      fontFamily: {
+        sans: ['Inter', 'Roboto', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        xl: '12px',
+        '2xl': '16px',
+        '3xl': '24px',
+      },
+      boxShadow: {
+        soft: '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+        'soft-lg': '0 10px 40px -15px rgba(0, 0, 0, 0.1)',
+        neumorphic: '8px 8px 16px #d1d5db, -8px -8px 16px #ffffff',
+        'neumorphic-dark': '8px 8px 16px #0c1222, -8px -8px 16px #121e38',
+      },
+    },
+  },
+  plugins: [],
+};
