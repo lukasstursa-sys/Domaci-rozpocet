@@ -56,6 +56,17 @@ module.exports = {
       filename: '[name].css',
     }),
   ],
+  devServer: {
+    static: path.resolve(__dirname, 'dist'),
+    port: 3000,
+    open: '/newtab.html',
+    hot: true,
+    historyApiFallback: {
+      rewrites: [
+        { from: /^\/$/, to: '/newtab.html' },
+      ],
+    },
+  },
   devtool: process.env.NODE_ENV === 'production' ? false : 'cheap-module-source-map',
   optimization: {
     splitChunks: false,
