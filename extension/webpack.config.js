@@ -48,6 +48,8 @@ module.exports = {
       patterns: [
         { from: 'manifest.json', to: 'manifest.json' },
         { from: 'public/icons', to: 'icons', noErrorOnMissing: true },
+        { from: 'public/pwa-manifest.json', to: 'pwa-manifest.json' },
+        { from: 'public/sw.js', to: 'sw.js' },
       ],
     }),
     new MiniCssExtractPlugin({
