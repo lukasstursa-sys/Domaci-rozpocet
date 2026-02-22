@@ -38,14 +38,17 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for local app (served on same origin)
+}));
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
       'http://localhost:3000',
+      'http://localhost:3001',
       'http://localhost:5173',
     ];
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // Allow requests with no origin (same-origin, mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     // Allow any chrome-extension origin
     if (origin.startsWith('chrome-extension://')) return callback(null, true);
@@ -96,9 +99,19 @@ app.use('/api/recurring', recurringRoutes);
 app.use('/api/debts', debtRoutes);
 app.use('/api/accounts', accountRoutes);
 
+// Serve frontend static files from extension/dist
+const frontendPath = path.join(__dirname, '../../extension/dist');
+app.use(express.static(frontendPath));
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// SPA fallback - serve newtab.html for any non-API route
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(frontendPath, 'newtab.html'));
 });
 
 // Cron Jobs

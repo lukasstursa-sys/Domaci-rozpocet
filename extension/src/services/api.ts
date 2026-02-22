@@ -2,7 +2,11 @@
 // API Service - Communication with Backend
 // ============================================================
 
-const API_BASE = 'http://localhost:3001/api';
+// Use relative URL when served from the same origin (backend serves frontend)
+// Falls back to localhost:3001 for Chrome extension or dev server contexts
+const API_BASE = (typeof chrome !== 'undefined' && chrome?.runtime?.id)
+  ? 'http://localhost:3001/api'
+  : '/api';
 
 class ApiService {
   private token: string | null = null;
